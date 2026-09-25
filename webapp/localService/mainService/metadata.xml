@@ -1,0 +1,550 @@
+<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="4.0" xmlns:edmx="http://docs.oasis-open.org/odata/ns/edmx">
+    <edmx:Reference Uri="https://sap.github.io/odata-vocabularies/vocabularies/Common.xml">
+        <edmx:Include Alias="Common" Namespace="com.sap.vocabularies.Common.v1"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Core.V1.xml">
+        <edmx:Include Alias="Core" Namespace="Org.OData.Core.V1"/>
+    </edmx:Reference>
+    <edmx:Reference Uri="https://oasis-tcs.github.io/odata-vocabularies/vocabularies/Org.OData.Validation.V1.xml">
+        <edmx:Include Alias="Validation" Namespace="Org.OData.Validation.V1"/>
+    </edmx:Reference>
+    <edmx:DataServices>
+        <Schema Namespace="PricingService" xmlns="http://docs.oasis-open.org/odata/ns/edm">
+            <Annotation Term="Core.Links">
+                <Collection>
+                    <Record>
+                        <PropertyValue Property="rel" String="author"/>
+                        <PropertyValue Property="href" String="https://cap.cloud.sap"/>
+                    </Record>
+                </Collection>
+            </Annotation>
+            <EntityContainer Name="EntityContainer">
+                <EntitySet Name="Regions" EntityType="PricingService.Regions"/>
+                <EntitySet Name="Models" EntityType="PricingService.Models"/>
+                <EntitySet Name="PricingComponents" EntityType="PricingService.PricingComponents"/>
+                <EntitySet Name="RTOMasters" EntityType="PricingService.RTOMasters">
+                    <NavigationPropertyBinding Path="region" Target="Regions"/>
+                </EntitySet>
+                <EntitySet Name="RTOExpense" EntityType="PricingService.RTOExpense">
+                    <NavigationPropertyBinding Path="region" Target="Regions"/>
+                </EntitySet>
+                <EntitySet Name="Parts" EntityType="PricingService.Parts"/>
+                <EntitySet Name="MTOConfigurations" EntityType="PricingService.MTOConfigurations">
+                    <NavigationPropertyBinding Path="referenceMTSModel" Target="Models"/>
+                    <NavigationPropertyBinding Path="parts" Target="MTOConfigurationParts"/>
+                </EntitySet>
+                <EntitySet Name="MTOConfigurationParts" EntityType="PricingService.MTOConfigurationParts">
+                    <NavigationPropertyBinding Path="configuration" Target="MTOConfigurations"/>
+                    <NavigationPropertyBinding Path="part" Target="Parts"/>
+                </EntitySet>
+                <EntitySet Name="PricingResults" EntityType="PricingService.PricingResults">
+                    <NavigationPropertyBinding Path="model" Target="Models"/>
+                    <NavigationPropertyBinding Path="region" Target="Regions"/>
+                    <NavigationPropertyBinding Path="referenceMTSModel" Target="Models"/>
+                </EntitySet>
+                <ActionImport Name="calculateMTS" Action="PricingService.calculateMTS"/>
+                <ActionImport Name="calculateMTO" Action="PricingService.calculateMTO"/>
+                <ActionImport Name="calculateEV" Action="PricingService.calculateEV"/>
+                <ActionImport Name="calculateGeM" Action="PricingService.calculateGeM"/>
+                <ActionImport Name="calculateCSD" Action="PricingService.calculateCSD"/>
+                <ActionImport Name="calculateMultiRegion" Action="PricingService.calculateMultiRegion"/>
+                <ActionImport Name="submitPricing" Action="PricingService.submitPricing"/>
+                <ActionImport Name="approvePricing" Action="PricingService.approvePricing"/>
+                <ActionImport Name="rejectPricing" Action="PricingService.rejectPricing"/>
+            </EntityContainer>
+            <EntityType Name="Regions">
+                <Key>
+                    <PropertyRef Name="regionCode"/>
+                </Key>
+                <Property Name="regionCode" Type="Edm.String" MaxLength="10" Nullable="false"/>
+                <Property Name="regionName" Type="Edm.String" MaxLength="100"/>
+                <Property Name="rtoBasis" Type="Edm.String" MaxLength="20"/>
+            </EntityType>
+            <EntityType Name="Models">
+                <Key>
+                    <PropertyRef Name="modelCode"/>
+                </Key>
+                <Property Name="modelCode" Type="Edm.String" MaxLength="40" Nullable="false"/>
+                <Property Name="validFrom" Type="Edm.Date"/>
+                <Property Name="orderType" Type="Edm.String"/>
+                <Property Name="modelDescription" Type="Edm.String" MaxLength="200"/>
+                <Property Name="engineType" Type="Edm.String" DefaultValue="Petrol"/>
+                <Property Name="ccWatt" Type="Edm.Decimal" Precision="10" Scale="2"/>
+                <Property Name="gstPercent" Type="Edm.Decimal" Precision="5" Scale="2"/>
+                <Property Name="dealerMarginPercent" Type="Edm.Decimal" Precision="5" Scale="2"/>
+                <Property Name="csdDiscountPercent" Type="Edm.Decimal" Precision="5" Scale="2"/>
+                <Property Name="csdGstPercent" Type="Edm.Decimal" Precision="5" Scale="2"/>
+                <Property Name="gemValue" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="status" Type="Edm.String" DefaultValue="ACTIVE"/>
+                <Property Name="approvalStatus" Type="Edm.String" DefaultValue="DRAFT"/>
+            </EntityType>
+            <EntityType Name="PricingComponents">
+                <Key>
+                    <PropertyRef Name="regionCode"/>
+                    <PropertyRef Name="engineType"/>
+                </Key>
+                <Property Name="regionCode" Type="Edm.String" MaxLength="10" Nullable="false"/>
+                <Property Name="engineType" Type="Edm.String" Nullable="false" DefaultValue="Petrol"/>
+                <Property Name="validFrom" Type="Edm.Date"/>
+                <Property Name="helmet" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="transportation" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="helmetMargin" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="otherExpensesBelow500" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="otherExpensesAbove500" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="insuranceRateBelow350" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="insuranceRateAbove350" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="tpaPaBelow350" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="tpaPaAbove350" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="noPlateCharges" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="approvalStatus" Type="Edm.String" DefaultValue="DRAFT"/>
+            </EntityType>
+            <EntityType Name="RTOMasters">
+                <Key>
+                    <PropertyRef Name="id"/>
+                </Key>
+                <Property Name="id" Type="Edm.Guid" Nullable="false"/>
+                <NavigationProperty Name="region" Type="PricingService.Regions">
+                    <ReferentialConstraint Property="region_regionCode" ReferencedProperty="regionCode"/>
+                </NavigationProperty>
+                <Property Name="region_regionCode" Type="Edm.String" MaxLength="10"/>
+                <Property Name="validFrom" Type="Edm.Date"/>
+                <Property Name="slab" Type="Edm.Int32"/>
+                <Property Name="engineType" Type="Edm.String" DefaultValue="Petrol"/>
+                <Property Name="ccMin" Type="Edm.Decimal" Precision="10" Scale="2"/>
+                <Property Name="ccMax" Type="Edm.Decimal" Precision="10" Scale="2"/>
+                <Property Name="minimumPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="maximumPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="rtoPercent" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="flatPriceValue" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="approvalStatus" Type="Edm.String" DefaultValue="DRAFT"/>
+            </EntityType>
+            <EntityType Name="RTOExpense">
+                <Key>
+                    <PropertyRef Name="id"/>
+                </Key>
+                <Property Name="id" Type="Edm.Guid" Nullable="false"/>
+                <NavigationProperty Name="region" Type="PricingService.Regions">
+                    <ReferentialConstraint Property="region_regionCode" ReferencedProperty="regionCode"/>
+                </NavigationProperty>
+                <Property Name="region_regionCode" Type="Edm.String" MaxLength="10"/>
+                <Property Name="slab" Type="Edm.Int32"/>
+                <Property Name="engineType" Type="Edm.String" DefaultValue="Petrol"/>
+                <Property Name="minimumPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="maximumPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="percentage" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="fixedAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="approvalStatus" Type="Edm.String" DefaultValue="DRAFT"/>
+            </EntityType>
+            <EntityType Name="Parts">
+                <Key>
+                    <PropertyRef Name="partCode"/>
+                </Key>
+                <Property Name="partCode" Type="Edm.String" MaxLength="50" Nullable="false"/>
+                <Property Name="validFrom" Type="Edm.Date"/>
+                <Property Name="description" Type="Edm.String" MaxLength="200"/>
+                <Property Name="miyCost" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="miyMarkup" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="priceIndicator" Type="Edm.String" MaxLength="20"/>
+            </EntityType>
+            <EntityType Name="MTOConfigurations">
+                <Key>
+                    <PropertyRef Name="mtoModelCode"/>
+                </Key>
+                <Property Name="mtoModelCode" Type="Edm.String" MaxLength="40" Nullable="false"/>
+                <Property Name="validFrom" Type="Edm.Date"/>
+                <NavigationProperty Name="referenceMTSModel" Type="PricingService.Models">
+                    <ReferentialConstraint Property="referenceMTSModel_modelCode" ReferencedProperty="modelCode"/>
+                </NavigationProperty>
+                <Property Name="referenceMTSModel_modelCode" Type="Edm.String" MaxLength="40"/>
+                <NavigationProperty Name="parts" Type="Collection(PricingService.MTOConfigurationParts)" Partner="configuration">
+                    <OnDelete Action="Cascade"/>
+                </NavigationProperty>
+            </EntityType>
+            <EntityType Name="MTOConfigurationParts">
+                <Key>
+                    <PropertyRef Name="partNo"/>
+                </Key>
+                <Property Name="partNo" Type="Edm.Int32" Nullable="false"/>
+                <NavigationProperty Name="configuration" Type="PricingService.MTOConfigurations" Partner="parts">
+                    <ReferentialConstraint Property="configuration_mtoModelCode" ReferencedProperty="mtoModelCode"/>
+                </NavigationProperty>
+                <Property Name="configuration_mtoModelCode" Type="Edm.String" MaxLength="40"/>
+                <NavigationProperty Name="part" Type="PricingService.Parts">
+                    <ReferentialConstraint Property="part_partCode" ReferencedProperty="partCode"/>
+                </NavigationProperty>
+                <Property Name="part_partCode" Type="Edm.String" MaxLength="50"/>
+                <Property Name="quantity" Type="Edm.Int32"/>
+            </EntityType>
+            <EntityType Name="PricingResults">
+                <Key>
+                    <PropertyRef Name="ID"/>
+                </Key>
+                <Property Name="ID" Type="Edm.Guid" Nullable="false"/>
+                <NavigationProperty Name="model" Type="PricingService.Models">
+                    <ReferentialConstraint Property="model_modelCode" ReferencedProperty="modelCode"/>
+                </NavigationProperty>
+                <Property Name="model_modelCode" Type="Edm.String" MaxLength="40"/>
+                <NavigationProperty Name="region" Type="PricingService.Regions">
+                    <ReferentialConstraint Property="region_regionCode" ReferencedProperty="regionCode"/>
+                </NavigationProperty>
+                <Property Name="region_regionCode" Type="Edm.String" MaxLength="10"/>
+                <Property Name="nspPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="orderType" Type="Edm.String" MaxLength="10"/>
+                <Property Name="submission_ID" Type="Edm.Guid"/>
+                <Property Name="inputNSP" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="exShowroomInput" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="actualNSP" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="helmet" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="transportation" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="dealerCost" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="otherExpenses" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="dealerMargin" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="helmetMargin" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="totalDealerMargin" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="ndp" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="basicPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="gstAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="exShowroomPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="rtoPercent" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="rtoAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="rtoWithBill" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="insuranceRate" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="insuranceAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="tpaPa" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="insuranceGst" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="totalInsurance" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="onRoadPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <NavigationProperty Name="referenceMTSModel" Type="PricingService.Models">
+                    <ReferentialConstraint Property="referenceMTSModel_modelCode" ReferencedProperty="modelCode"/>
+                </NavigationProperty>
+                <Property Name="referenceMTSModel_modelCode" Type="Edm.String" MaxLength="40"/>
+                <Property Name="mtsExShowroom" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="mtsOnRoad" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="miyExShowroomTotal" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="miyOnRoadTotal" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="expectedExShowroom" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="expectedOnRoad" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="incrementDealer" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="lowestMtsExShowroom" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="gemDiscountPercent" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="gemDiscountAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="gemSubTotal" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="gemBasic" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="gemGstAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="finalGemPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="csdNsp" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="csdBasicExclHelmet" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="csdDiscountPercent" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="csdDiscountAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="csdPreTaxNet" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="csdGstPercent" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="csdGstAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="csdExShowroom" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="incidentalPercent" Type="Edm.Decimal" Precision="7" Scale="4"/>
+                <Property Name="incidentalCharges" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="finalCsdPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="csdOnRoad" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="status" Type="Edm.String"/>
+            </EntityType>
+            <ComplexType Name="MTSResult">
+                <Property Name="NSP" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="dealerCost" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="NDP" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="dealerMargin" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="totalDealerMargin" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="otherExpenses" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="basicPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="gstAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="exShowroomPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="rtoAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="rtoWithBill" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="insuranceAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="tpaPa" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="insuranceGst" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="totalInsurance" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="onRoadPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+            </ComplexType>
+            <ComplexType Name="MTOPartInput">
+                <Property Name="partCode" Type="Edm.String" MaxLength="50"/>
+                <Property Name="quantity" Type="Edm.Int32"/>
+            </ComplexType>
+            <ComplexType Name="MTOInput">
+                <Property Name="modelCode" Type="Edm.String" MaxLength="40"/>
+                <Property Name="regionCode" Type="Edm.String" MaxLength="20"/>
+                <Property Name="engineType" Type="Edm.String" MaxLength="20"/>
+                <Property Name="orderType" Type="Edm.String" MaxLength="10"/>
+                <Property Name="validFrom" Type="Edm.Date"/>
+                <Property Name="parts" Type="Collection(PricingService.MTOPartInput)" Nullable="true"/>
+            </ComplexType>
+            <ComplexType Name="MTOResult">
+                <Property Name="modelCode" Type="Edm.String" MaxLength="40"/>
+                <Property Name="mtoModelCode" Type="Edm.String" MaxLength="40"/>
+                <Property Name="regionCode" Type="Edm.String" MaxLength="20"/>
+                <Property Name="engineType" Type="Edm.String" MaxLength="20"/>
+                <Property Name="orderType" Type="Edm.String" MaxLength="10"/>
+                <Property Name="referenceMTSModel" Type="Edm.String" MaxLength="40"/>
+                <Property Name="mtsNSP" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="mtsExShowroom" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="mtsOnRoad" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="miyExShowroomTotal" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="miyOnRoadTotal" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="expectedExShowroom" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="expectedOnRoad" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="actualNSP" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="exShowroomPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="onRoadPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="incrementDealer" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="iterations" Type="Edm.Int32"/>
+            </ComplexType>
+            <ComplexType Name="EVInput">
+                <Property Name="modelCode" Type="Edm.String" MaxLength="40"/>
+                <Property Name="nsp" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="regionCode" Type="Edm.String" MaxLength="10"/>
+            </ComplexType>
+            <ComplexType Name="EVResult">
+                <Property Name="modelCode" Type="Edm.String" MaxLength="40"/>
+                <Property Name="regionCode" Type="Edm.String" MaxLength="10"/>
+                <Property Name="engineType" Type="Edm.String" MaxLength="10"/>
+                <Property Name="nsp" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="transportation" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="otherExpenses" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="dealerMargin" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="basicPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="gstAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="exShowroomPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="rtoAmount" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="insurance" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="tpaPA" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="numberPlateCharges" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Property Name="onRoadPrice" Type="Edm.Decimal" Precision="15" Scale="2"/>
+            </ComplexType>
+            <Action Name="calculateMTS" IsBound="false">
+                <Parameter Name="NSP" Type="Edm.Decimal" Precision="15" Scale="2"/>
+                <Parameter Name="regionCode" Type="Edm.String" MaxLength="20"/>
+                <Parameter Name="engineType" Type="Edm.String" MaxLength="20"/>
+                <Parameter Name="modelCode" Type="Edm.String" MaxLength="20"/>
+                <ReturnType Type="PricingService.MTSResult"/>
+            </Action>
+            <Action Name="calculateMTO" IsBound="false">
+                <Parameter Name="items" Type="Collection(PricingService.MTOInput)" Nullable="true"/>
+                <ReturnType Type="Collection(PricingService.MTOResult)" Nullable="true"/>
+            </Action>
+            <Action Name="calculateEV" IsBound="false">
+                <Parameter Name="item" Type="PricingService.EVInput"/>
+                <ReturnType Type="PricingService.EVResult"/>
+            </Action>
+            <Action Name="calculateGeM" IsBound="false">
+                <Parameter Name="modelCodes" Type="Collection(Edm.String)" MaxLength="20" Nullable="true"/>
+            </Action>
+            <Action Name="calculateCSD" IsBound="false"/>
+            <Action Name="calculateMultiRegion" IsBound="false"/>
+            <Action Name="submitPricing" IsBound="false"/>
+            <Action Name="approvePricing" IsBound="false"/>
+            <Action Name="rejectPricing" IsBound="false"/>
+            <Annotations Target="PricingService.Models/orderType">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="MTO"/>
+                            <PropertyValue Property="Value" String="MTO"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="MTS"/>
+                            <PropertyValue Property="Value" String="MTS"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.Models/engineType">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="Petrol"/>
+                            <PropertyValue Property="Value" String="Petrol"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="EV"/>
+                            <PropertyValue Property="Value" String="EV"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.Models/status">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="ACTIVE"/>
+                            <PropertyValue Property="Value" String="ACTIVE"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="INACTIVE"/>
+                            <PropertyValue Property="Value" String="INACTIVE"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.Models/approvalStatus">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="DRAFT"/>
+                            <PropertyValue Property="Value" String="DRAFT"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="SUBMITTED"/>
+                            <PropertyValue Property="Value" String="SUBMITTED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="APPROVED"/>
+                            <PropertyValue Property="Value" String="APPROVED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="REJECTED"/>
+                            <PropertyValue Property="Value" String="REJECTED"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.PricingComponents/engineType">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="Petrol"/>
+                            <PropertyValue Property="Value" String="Petrol"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="EV"/>
+                            <PropertyValue Property="Value" String="EV"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.PricingComponents/approvalStatus">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="DRAFT"/>
+                            <PropertyValue Property="Value" String="DRAFT"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="SUBMITTED"/>
+                            <PropertyValue Property="Value" String="SUBMITTED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="APPROVED"/>
+                            <PropertyValue Property="Value" String="APPROVED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="REJECTED"/>
+                            <PropertyValue Property="Value" String="REJECTED"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.RTOMasters/id">
+                <Annotation Term="Core.ComputedDefaultValue" Bool="true"/>
+            </Annotations>
+            <Annotations Target="PricingService.RTOMasters/engineType">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="Petrol"/>
+                            <PropertyValue Property="Value" String="Petrol"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="EV"/>
+                            <PropertyValue Property="Value" String="EV"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.RTOMasters/approvalStatus">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="DRAFT"/>
+                            <PropertyValue Property="Value" String="DRAFT"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="SUBMITTED"/>
+                            <PropertyValue Property="Value" String="SUBMITTED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="APPROVED"/>
+                            <PropertyValue Property="Value" String="APPROVED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="REJECTED"/>
+                            <PropertyValue Property="Value" String="REJECTED"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.RTOExpense/id">
+                <Annotation Term="Core.ComputedDefaultValue" Bool="true"/>
+            </Annotations>
+            <Annotations Target="PricingService.RTOExpense/engineType">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="Petrol"/>
+                            <PropertyValue Property="Value" String="Petrol"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="EV"/>
+                            <PropertyValue Property="Value" String="EV"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.RTOExpense/approvalStatus">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="DRAFT"/>
+                            <PropertyValue Property="Value" String="DRAFT"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="SUBMITTED"/>
+                            <PropertyValue Property="Value" String="SUBMITTED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="APPROVED"/>
+                            <PropertyValue Property="Value" String="APPROVED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="REJECTED"/>
+                            <PropertyValue Property="Value" String="REJECTED"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+            <Annotations Target="PricingService.PricingResults/ID">
+                <Annotation Term="Core.ComputedDefaultValue" Bool="true"/>
+            </Annotations>
+            <Annotations Target="PricingService.PricingResults/status">
+                <Annotation Term="Validation.AllowedValues">
+                    <Collection>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="DRAFT"/>
+                            <PropertyValue Property="Value" String="DRAFT"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="SUBMITTED"/>
+                            <PropertyValue Property="Value" String="SUBMITTED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="APPROVED"/>
+                            <PropertyValue Property="Value" String="APPROVED"/>
+                        </Record>
+                        <Record Type="Validation.AllowedValue">
+                            <Annotation Term="Core.SymbolicName" String="REJECTED"/>
+                            <PropertyValue Property="Value" String="REJECTED"/>
+                        </Record>
+                    </Collection>
+                </Annotation>
+            </Annotations>
+        </Schema>
+    </edmx:DataServices>
+</edmx:Edmx>
