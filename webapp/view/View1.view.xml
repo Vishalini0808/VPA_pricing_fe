@@ -1,6 +1,1236 @@
 <mvc:View controllerName="vpapricing.controller.View1"
-    xmlns:mvc="sap.ui.core.mvc"
-    xmlns="sap.m">
-    <Page id="page" title="{i18n>title}">
-    </Page>
+   xmlns:mvc="sap.ui.core.mvc"
+    xmlns="sap.m"
+    xmlns:f="sap.f"
+    xmlns:core="sap.ui.core"
+    xmlns:table="sap.ui.table"
+    xmlns:layout="sap.ui.layout">
+
+    <f:DynamicPage
+        id="pricingPage"
+        fitContent="true">
+
+        <!-- Page Header -->
+        <f:title>
+            <f:DynamicPageTitle>
+                <f:heading>
+                    <Title text="Vehicle Pricing Calculation"/>
+                </f:heading>
+            </f:DynamicPageTitle>
+        </f:title>
+
+        <f:content>
+            <VBox class="sapUiSmallMargin">
+
+                <!-- ===================== -->
+                <!-- Selection Section      -->
+                <!-- ===================== -->
+
+                <Panel
+                    headerText="Selection"
+                    class="sapUiSmallMarginBottom">
+
+                    <layout:Grid
+                        defaultSpan="XL3 L3 M6 S12"
+                        hSpacing="1"
+                        vSpacing="1">
+
+                        <!-- Region -->
+                        <VBox>
+                            <Label
+                                text="Region"
+                                required="true"/>
+
+                             <ComboBox
+                                id="regionSelect"
+                                width="100%"
+                                selectedKey="{viewModel>/region}"
+                                items="{
+                                    path: '/Regions'
+                                }">
+
+                                    <core:Item
+                                        key="{regionCode}"
+                                        text="{regionName}"/>
+
+                            </ComboBox>
+                        </VBox>
+
+                        <!-- Order Type -->
+                        <VBox>
+                            <Label
+                                text="Order Type"
+                                required="true"/>
+
+                            <Select
+                                id="orderTypeSelect"
+                                width="100%"
+                                selectedKey="{viewModel>/orderType}"
+                                change=".onOrderTypeChange">
+
+                                <items>
+                                    <core:Item
+                                        key=""
+                                        text="Select Order Type"/>
+                                    <core:Item
+                                        key="MTS"
+                                        text="MTS"/>
+                                    <core:Item
+                                        key="MTO"
+                                        text="MTO"/>
+                                    <core:Item
+                                        key="EV"
+                                        text="EV"/>
+                                    <core:Item
+                                        key="GEM"
+                                        text="GeM"/>
+                                    <core:Item
+                                        key="CSD"
+                                        text="CSD"/>
+                                </items>
+
+                            </Select>
+                        </VBox>
+
+                        <!-- Model Codes -->
+                        <VBox>
+                            <Label
+                                text="Model Code(s)"
+                                required="true"/>
+
+                            <MultiComboBox
+                                id="modelCodeMultiCombo"
+                                width="100%"
+                                selectedKeys="{viewModel>/models}"
+                                items="{viewModel>/availableModels}">
+
+                                <core:Item
+                                        key="{viewModel>modelCode}"
+                                        text="{viewModel>modelCode}"/>
+
+                            </MultiComboBox>
+                        </VBox>
+
+                        <!-- Status -->
+                        <VBox>
+                            <Label text="Status Filter"/>
+
+                            <Select
+                                id="statusSelect"
+                                width="100%"
+                                selectedKey="{viewModel>/status}">
+
+                                <items>
+                                    <core:Item
+                                        key="ACTIVE"
+                                        text="Active"/>
+
+                                    <core:Item
+                                        key="INACTIVE"
+                                        text="Inactive"/>
+
+                                    <core:Item
+                                        key="ALL"
+                                        text="All"/>
+                                </items>
+
+                            </Select>
+                        </VBox>
+
+                        <!-- Effective Date -->
+                        <VBox>
+                            <Label
+                                text="Effective Date"
+                                required="true"/>
+
+                            <DatePicker
+                                id="effectiveDate"
+                                width="100%"
+                                value="{viewModel>/effectiveDate}"
+                                valueFormat="dd.MM.yyyy"
+                                displayFormat="dd.MM.yyyy"/>
+                        </VBox>
+
+                        <!-- Submitter Email -->
+                        <VBox>
+                            <Label text="Submitter E-mail"/>
+
+                            <Input
+                                id="submitterEmail"
+                                width="100%"
+                                value="{viewModel>/submitterEmail}"
+                                editable="false"/>
+                        </VBox>
+
+                        <!-- Buttons -->
+                        <HBox
+                            class="sapUiSmallMarginTop"
+                            alignItems="End"
+                            justifyContent="End">
+
+                            <Button
+                                text="Get Data"
+                                type="Emphasized"
+                                icon="sap-icon://search"
+                                press=".onGetData"
+                                class="sapUiTinyMarginEnd"/>
+
+                            <Button
+                                text="Clear"
+                                icon="sap-icon://reset"
+                                press=".onClear"/>
+
+                        </HBox>
+
+                    </layout:Grid>
+
+                </Panel>
+
+
+
+                <!-- ===================== -->
+                <!-- Pricing Results        -->
+                <!-- ===================== -->
+
+                <Panel
+                    headerText="Pricing Results"
+                    class="sapUiSmallMarginTop">
+
+                    <!-- Toolbar -->
+                    <OverflowToolbar>
+
+                        <ToolbarSpacer/>
+
+                        <Button
+                            text="Calculate"
+                            type="Emphasized"
+                            icon="sap-icon://simulate"
+                            press=".onCalculate"/>
+
+                        <Button
+                            text="Submit"
+                            icon="sap-icon://paper-plane"
+                            press=".onSubmit"
+                            class="sapUiTinyMarginBegin"/>
+
+                        <Button
+                            text="Apply to All Region"
+                            icon="sap-icon://copy"
+                            press=".onApplyToAllRegion"
+                            class="sapUiTinyMarginBegin"/>
+
+                    </OverflowToolbar>
+
+
+                    <!-- =========================
+                        PRICING RESULTS TABLE
+                        ========================= -->
+                    <table:Table
+                        id="pricingTable"
+                        rows="{pricingModel>/results}"
+                        selectionMode="MultiToggle"
+                        selectionBehavior="RowSelector"
+                        enableColumnReordering="true"
+                        enableCellFilter="false"
+                        alternateRowColors="true"
+                        width="100%">
+
+                        <!-- =====================================================
+                            COMMON COLUMNS
+                            ===================================================== -->
+
+                        <!-- Model -->
+                        <table:Column width="180px">
+                            <Label text="Model"/>
+                            <table:template>
+                                <Text text="{pricingModel>modelCode}"/>
+                            </table:template>
+                        </table:Column>
+
+                        <!-- Region -->
+                        <table:Column width="100px">
+                            <Label text="Region"/>
+                            <table:template>
+                                <Text text="{pricingModel>regionCode}"/>
+                            </table:template>
+                        </table:Column>
+
+                        <!-- Order Type -->
+                        <table:Column width="100px">
+                            <Label text="Order Type"/>
+                            <table:template>
+                                <Text text="{pricingModel>orderType}"/>
+                            </table:template>
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            MTS INPUT SECTION
+                            ===================================================== -->
+
+                        <!-- Input NSP -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Input NSP (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>inputNSP}"
+                                    type="Number"
+                                    editable="true"
+                                    change=".onInputChange"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Target Ex-Showroom -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' }">
+
+                            <Label text="Target Ex-Showroom (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>exShowroomInput}"
+                                    type="Number"
+                                    editable="true"
+                                    change=".onInputChange"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            MTS / EV MASTER VALUES
+                            ===================================================== -->
+
+                        <!-- Helmet -->
+                        <table:Column
+                            width="110px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Helmet (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>helmet}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Transportation -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Transportation (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>transportation}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Other Expenses -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Other Expenses (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>otherExpenses}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- GST % -->
+                        <table:Column
+                            width="100px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="GST %"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>gstPercent}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Dealer Margin % -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Dealer Margin %"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>dealerMarginPercent}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Helmet Margin -->
+                        <table:Column
+                            width="120px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Helmet Margin (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>helmetMargin}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            MTS / EV CALCULATED VALUES
+                            ===================================================== -->
+
+                        <!-- Actual NSP -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Actual NSP (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>actualNSP}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Dealer Cost -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Dealer Cost (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>dealerCost}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- NDP -->
+                        <table:Column
+                            width="120px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="NDP (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>ndp}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Dealer Margin -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Dealer Margin (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>dealerMargin}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Total Dealer Margin -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Total Dealer Margin (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>totalDealerMargin}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Basic Price -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Basic Price (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>basicPrice}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- GST Amount -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="GST Amount (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>gstAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Ex-Showroom -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Ex-Showroom Price (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>exShowroomPrice}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            RTO - MTS / EV
+                            ===================================================== -->
+
+                        <!-- RTO % -->
+                        <table:Column
+                            width="100px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="RTO %"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>rtoPercent}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- RTO Amount -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="RTO Amount (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>rtoAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- RTO With Bill -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="RTO With Bill (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>rtoWithBill}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            INSURANCE - MTS / EV
+                            ===================================================== -->
+
+                        <!-- Insurance Rate -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Insurance Rate"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>insuranceRate}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Insurance Amount -->
+                        <table:Column
+                            width="150px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Insurance Amount (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>insuranceAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- TPA / PA -->
+                        <table:Column
+                            width="120px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="TPA / PA (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>tpaPa}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Insurance GST -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Insurance GST (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>insuranceGst}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Total Insurance -->
+                        <table:Column
+                            width="150px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="Total Insurance (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>totalInsurance}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- On Road -->
+                        <table:Column
+                            width="150px"
+                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+
+                            <Label text="On-Road Price (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>onRoadPrice}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            MTO
+                            ===================================================== -->
+
+                        <!-- Reference MTS Model -->
+                        <table:Column
+                            width="180px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="Reference MTS Model"/>
+
+                            <table:template>
+                                <Text text="{pricingModel>referenceMTSModel}"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- MTS Ex-Showroom -->
+                        <table:Column
+                            width="150px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="MTS Ex-Showroom (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>mtsExShowroom}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- MTS On-Road -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="MTS On-Road (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>mtsOnRoad}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- MIY Ex-Showroom -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="MIY Ex-Showroom Total (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>miyExShowroomTotal}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- MIY On-Road -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="MIY On-Road Total (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>miyOnRoadTotal}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Expected Ex-Showroom -->
+                        <table:Column
+                            width="170px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="Expected Ex-Showroom (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>expectedExShowroom}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Expected On-Road -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="Expected On-Road (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>expectedOnRoad}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Increment Dealer -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'MTO' }">
+
+                            <Label text="Increment Dealer (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>incrementDealer}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            GeM
+                            ===================================================== -->
+
+                        <!-- Lowest MTS Ex-Showroom -->
+                        <table:Column
+                            width="180px"
+                            visible="{= ${viewModel>/orderType} === 'GEM' }">
+
+                            <Label text="Lowest MTS Ex-Showroom (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>lowestMtsExShowroom}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- GeM Discount % -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'GEM' }">
+
+                            <Label text="GeM Discount %"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>gemDiscountPercent}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- GeM Discount -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'GEM' }">
+
+                            <Label text="GeM Discount (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>gemDiscountAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- GeM SubTotal -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'GEM' }">
+
+                            <Label text="GeM SubTotal (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>gemSubTotal}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- GeM Basic -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'GEM' }">
+
+                            <Label text="GeM Basic (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>gemBasic}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- GeM GST -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'GEM' }">
+
+                            <Label text="GeM GST (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>gemGstAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Final GeM Price -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'GEM' }">
+
+                            <Label text="Final GeM Price (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>finalGemPrice}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            CSD
+                            ===================================================== -->
+
+                        <!-- CSD NSP -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD NSP (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdNsp}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD Basic Excl Helmet -->
+                        <table:Column
+                            width="180px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD Basic Excl Helmet (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdBasicExclHelmet}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD Discount % -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD Discount %"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdDiscountPercent}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD Discount -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD Discount (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdDiscountAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD Pre-Tax -->
+                        <table:Column
+                            width="150px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD Pre-Tax Net (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdPreTaxNet}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD GST % -->
+                        <table:Column
+                            width="120px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD GST %"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdGstPercent}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD GST -->
+                        <table:Column
+                            width="140px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD GST (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdGstAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD Ex-Showroom -->
+                        <table:Column
+                            width="170px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD Ex-Showroom (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdExShowroom}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Incidental % -->
+                        <table:Column
+                            width="120px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="Incidental %"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>incidentalPercent}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Incidental Charges -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="Incidental Charges (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>incidentalCharges}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD RTO -->
+                        <table:Column
+                            width="130px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="RTO Amount (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>rtoAmount}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD RTO With Bill -->
+                        <table:Column
+                            width="150px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="RTO With Bill (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>rtoWithBill}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD Total Insurance -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="Total Insurance (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>totalInsurance}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- Final CSD Price -->
+                        <table:Column
+                            width="160px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="Final CSD Price (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>finalCsdPrice}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- CSD On-Road -->
+                        <table:Column
+                            width="150px"
+                            visible="{= ${viewModel>/orderType} === 'CSD' }">
+
+                            <Label text="CSD On-Road (₹)"/>
+
+                            <table:template>
+                                <Input
+                                    value="{pricingModel>csdOnRoad}"
+                                    editable="false"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                        <!-- =====================================================
+                            STATUS
+                            ===================================================== -->
+
+                        <table:Column width="120px">
+                            <Label text="Status"/>
+
+                            <table:template>
+                                <ObjectStatus
+                                    text="{pricingModel>status}"/>
+                            </table:template>
+
+                        </table:Column>
+
+
+                    </table:Table>
+
+
+                    <!-- Footer -->
+                    <HBox
+                        justifyContent="SpaceBetween"
+                        alignItems="Center"
+                        class="sapUiSmallMarginTop">
+
+                        <Text
+                            text="Showing {pricingModel>/resultsCount} result(s)"/>
+
+                        <!-- <HBox>
+
+                            <Button
+                                icon="sap-icon://navigation-left-arrow"
+                                type="Transparent"
+                                press=".onPreviousPage"/>
+
+                            <Button
+                                text="1"
+                                type="Emphasized"
+                                class="sapUiTinyMarginBegin sapUiTinyMarginEnd"/>
+
+                            <Button
+                                icon="sap-icon://navigation-right-arrow"
+                                type="Transparent"
+                                press=".onNextPage"/>
+
+                        </HBox> -->
+
+                    </HBox>
+
+                </Panel>
+
+            </VBox>
+        </f:content>
+
+    </f:DynamicPage>
+
 </mvc:View>
