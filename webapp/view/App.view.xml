@@ -3,5 +3,6 @@
     xmlns:mvc="sap.ui.core.mvc"
     xmlns="sap.m">
     <App id="app">
+        <mvc:XMLView viewName="vpapricing.view.View1"/>
     </App>
 </mvc:View>
