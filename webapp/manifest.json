@@ -15,6 +15,17 @@
       "version": "1.32.0",
       "toolsId": "b6611803-82b3-4923-9a1b-2a8eb012beaf"
     },
+    "crossNavigation": {
+      "inbounds": {
+        "vpapricing-display": {
+          "semanticObject": "VPAPricing",
+          "action": "display",
+          "title": "{{appTitle}}",
+          "subTitle": "Vehicle Pricing Calculation",
+          "icon": "sap-icon://money-bills"
+        }
+      }
+    },
     "dataSources": {
       "mainService": {
         "uri": "/pricing/",
