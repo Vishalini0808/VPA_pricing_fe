@@ -8,7 +8,8 @@
 
     <f:DynamicPage
         id="pricingPage"
-        fitContent="true">
+        fitContent="true"
+        class="pricingView">
 
         <!-- Page Header -->
         <f:title>
@@ -27,9 +28,19 @@
                 <!-- ===================== -->
 
                 <Panel
-                    headerText="Selection"
-                    class="sapUiSmallMarginBottom">
+                    expandable="true"
+                    expanded="true"
+                    class="selectionPanel sapUiSmallMarginBottom">
 
+                    <headerToolbar>
+                        <Toolbar>
+                            <core:Icon
+                                src="sap-icon://filter-fields"
+                                class="sapUiTinyMarginEnd"/>
+
+                            <Title text="Selection"/>
+                        </Toolbar>
+                    </headerToolbar>
                     <layout:Grid
                         defaultSpan="XL3 L3 M6 S12"
                         hSpacing="1"
@@ -111,6 +122,20 @@
                             </MultiComboBox>
                         </VBox>
 
+                        <!-- Effective Date -->
+                        <VBox>
+                            <Label
+                                text="Effective Date"
+                                required="true"/>
+
+                            <DatePicker
+                                id="effectiveDate"
+                                width="100%"
+                                value="{viewModel>/effectiveDate}"
+                                valueFormat="dd.MM.yyyy"
+                                displayFormat="dd.MM.yyyy"/>
+                        </VBox>
+
                         <!-- Status -->
                         <VBox>
                             <Label text="Status Filter"/>
@@ -137,22 +162,8 @@
                             </Select>
                         </VBox>
 
-                        <!-- Effective Date -->
-                        <VBox>
-                            <Label
-                                text="Effective Date"
-                                required="true"/>
-
-                            <DatePicker
-                                id="effectiveDate"
-                                width="100%"
-                                value="{viewModel>/effectiveDate}"
-                                valueFormat="dd.MM.yyyy"
-                                displayFormat="dd.MM.yyyy"/>
-                        </VBox>
-
                         <!-- Submitter Email -->
-                        <VBox>
+                        <!-- <VBox>
                             <Label text="Submitter E-mail"/>
 
                             <Input
@@ -160,7 +171,7 @@
                                 width="100%"
                                 value="{viewModel>/submitterEmail}"
                                 editable="false"/>
-                        </VBox>
+                        </VBox> -->
 
                         <!-- Buttons -->
                         <HBox
@@ -193,8 +204,20 @@
                 <!-- ===================== -->
 
                 <Panel
-                    headerText="Pricing Results"
-                    class="sapUiSmallMarginTop">
+                    id="pricingPanel"
+                    expandable="true"
+                    expanded="false"
+                    class="pricingResultsPanel sapUiSmallMarginTop">
+
+                    <headerToolbar>
+                        <Toolbar>
+                            <core:Icon
+                                src="sap-icon://table-view"
+                                class="sapUiTinyMarginEnd"/>
+
+                            <Title text="Pricing Results"/>
+                        </Toolbar>
+                    </headerToolbar>
 
                     <!-- Toolbar -->
                     <OverflowToolbar>
@@ -219,6 +242,13 @@
                             press=".onApplyToAllRegion"
                             class="sapUiTinyMarginBegin"/>
 
+                        <Button
+                            text="Delete"
+                            type="Reject"
+                            icon="sap-icon://delete"
+                            press=".onDelete"
+                            class="sapUiTinyMarginBegin"/>
+
                     </OverflowToolbar>
 
 
@@ -227,12 +257,14 @@
                         ========================= -->
                     <table:Table
                         id="pricingTable"
+                        class="pricingTable"
                         rows="{pricingModel>/results}"
                         selectionMode="MultiToggle"
                         selectionBehavior="RowSelector"
                         enableColumnReordering="true"
                         enableCellFilter="false"
                         alternateRowColors="true"
+                        fixedColumnCount="1"
                         width="100%">
 
                         <!-- =====================================================
@@ -240,7 +272,8 @@
                             ===================================================== -->
 
                         <!-- Model -->
-                        <table:Column width="180px">
+                        <table:Column 
+                            width="180px">
                             <Label text="Model"/>
                             <table:template>
                                 <Text text="{pricingModel>modelCode}"/>
@@ -287,7 +320,7 @@
 
 
                         <!-- Target Ex-Showroom -->
-                        <table:Column
+                        <!-- <table:Column
                             width="160px"
                             visible="{= ${viewModel>/orderType} === 'MTS' }">
 
@@ -297,11 +330,11 @@
                                 <Input
                                     value="{pricingModel>exShowroomInput}"
                                     type="Number"
-                                    editable="true"
+                                    editable="false"
                                     change=".onInputChange"/>
                             </table:template>
 
-                        </table:Column>
+                        </table:Column> -->
 
 
                         <!-- =====================================================
@@ -1187,6 +1220,8 @@
 
                             <table:template>
                                 <ObjectStatus
+                                    state="{= ${pricingModel>status} === 'APPROVED' ? 'Success' : ${pricingModel>status} === 'REJECTED' ? 'Error' : ${pricingModel>status} === 'SUBMITTED' ? 'Warning' : ${pricingModel>status} === 'DRAFT' ? 'Information' : 'None'}"
+                                    icon="{= ${pricingModel>status} === 'APPROVED' ? 'sap-icon://status-positive' : ${pricingModel>status} === 'REJECTED' ? 'sap-icon://status-negative' : ${pricingModel>status} === 'SUBMITTED' ? 'sap-icon://alert' : ${pricingModel>status} === 'DRAFT' ? 'sap-icon://status-inactive' : ''}"
                                     text="{pricingModel>status}"/>
                             </table:template>
 
