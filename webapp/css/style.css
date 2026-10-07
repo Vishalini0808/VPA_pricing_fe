@@ -1,1 +1,149 @@
-/* Enter your custom styles here */
+/* =========================
+   DYNAMIC PAGE
+   ========================= */
+.pricingView,
+.pricingView .sapFDynamicPageContent,
+.pricingView .sapFDynamicPageContentWrapper,
+.pricingView .sapFDynamicPageActualContentControl {
+    background: linear-gradient(
+        135deg,
+        #F5F9FC 0%,
+        #E8F1F8 50%,
+        #D9EAF5 100%
+    ) !important;
+}
+
+.pricingView .sapFDynamicPageTitle {
+    background-color: #063970 !important;
+}
+
+.pricingView .sapFDynamicPageTitle .sapMTitle {
+    color: #FFFFFF !important;
+}
+
+
+/* =========================
+   SELECTION PANEL
+   ========================= */
+
+.selectionPanel {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D9D9D9 !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Header */
+.selectionPanel .sapMPanelWrappingDivTb {
+    background-color: #F5F9FC !important;
+    border-bottom: 2px solid #063970 !important;
+}
+
+/* ONLY header icon */
+.selectionPanel .sapMPanelWrappingDivTb > .sapMTB .sapUiIcon {
+    color: #063970 !important;
+}
+
+/* Header title */
+.selectionPanel .sapMPanelWrappingDivTb .sapMTitle {
+    font-weight: 600 !important;
+}
+
+/* Content */
+.selectionPanel .sapMPanelContent {
+    background-color: #FFFFFF !important;
+}
+
+
+/* =========================
+   PRICING RESULTS
+   ========================= */
+
+.pricingResultsPanel {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D9D9D9 !important;
+    border-radius: 0.5rem !important;
+    box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.08) !important;
+}
+
+/* Header */
+.pricingResultsPanel .sapMPanelWrappingDivTb {
+    background-color: #F5F9FC !important;
+    border-bottom: 2px solid #063970 !important;
+}
+
+/* ONLY header icon */
+.pricingResultsPanel .sapMPanelWrappingDivTb > .sapMTB .sapUiIcon {
+    color: #063970 !important;
+}
+
+/* Header title */
+.pricingResultsPanel .sapMPanelWrappingDivTb .sapMTitle {
+    font-weight: 600 !important;
+}
+
+/* Action toolbar */
+.pricingResultsPanel .sapMOverflowToolbar {
+    background-color: #FFFFFF !important;
+    border-bottom: 1px solid #E5E5E5 !important;
+}
+
+/* Content */
+.pricingResultsPanel .sapMPanelContent {
+    background-color: #FFFFFF !important;
+    border-top: none !important;
+}
+
+
+/* =========================
+   PRICING TABLE
+   ========================= */
+
+.pricingTable {
+    background-color: #FFFFFF !important;
+    border: 1px solid #D9D9D9 !important;
+}
+
+/* Table header */
+.pricingTable .sapUiTableColHdrCnt {
+    background-color: #E8F1F8 !important;
+    border-bottom: 2px solid #063970 !important;
+}
+
+/* Header text */
+.pricingTable .sapUiTableColCell .sapMLabel {
+    color: #063970 !important;
+    font-weight: 600 !important;
+}
+
+/* Table cells */
+.pricingTable .sapUiTableCell {
+    background-color: #FFFFFF !important;
+    border-right: 1px solid #E5E7E7 !important;
+    border-bottom: 1px solid #E5E7E7 !important;
+}
+
+/* Alternate rows */
+.pricingTable .sapUiTableRowAlternate .sapUiTableCell {
+    background-color: #F7FAFC !important;
+}
+
+/* Normal text */
+.pricingTable .sapMText {
+    color: #32363A !important;
+}
+
+/* Editable input */
+.pricingTable .sapMInputBase {
+    background-color: #FFFFFF !important;
+}
+
+/* Selected row */
+.pricingTable .sapUiTableRowSel .sapUiTableCell {
+    background-color: #E1ECF5 !important;
+}
+
+/* Row selector */
+.pricingTable .sapUiTableRowHdrScr {
+    background-color: #F5F9FC !important;
+}

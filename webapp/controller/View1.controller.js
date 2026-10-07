@@ -30,8 +30,14 @@ sap.ui.define([
             this.getView().setModel(oPricingModel, "pricingModel");
         },
         onClear() {
-            const oViewModel = this.getView().getModel("viewModel");
 
+            const oViewModel =
+                this.getView().getModel("viewModel");
+
+            const oPricingModel =
+                this.getView().getModel("pricingModel");
+
+            // Clear selection fields
             oViewModel.setData({
                 region: "",
                 orderType: "",
@@ -41,6 +47,19 @@ sap.ui.define([
                 effectiveDate: "",
                 submitterEmail: ""
             });
+
+            // Clear pricing table
+            oPricingModel.setData({
+                results: [],
+                resultsCount: 0
+            });
+
+            // Clear table selection
+            const oTable = this.byId("pricingTable");
+
+            if (oTable) {
+                oTable.clearSelection();
+            }
         },
         async onOrderTypeChange(oEvent) {
 
@@ -647,7 +666,7 @@ sap.ui.define([
                             oModelData.validFrom,
 
                         status:
-                            "DRAFT",
+                            oExistingPricingResult?.status ?? "DRAFT",
 
                         // -------------------------------------------------
                         // Inputs
@@ -979,6 +998,7 @@ sap.ui.define([
                     "Failed to load pricing data."
                 );
             }
+            this.byId("pricingPanel").setExpanded(true);
         },
         onCalculate: async function () {
 
@@ -1218,13 +1238,42 @@ sap.ui.define([
 
             const oModel = this.getView().getModel();
 
-            const oAction =
-                oModel.bindContext("/calculateCSD(...)");
+            try {
 
-            await oAction.execute();
+                // One region for all selected models
+                const sRegionCode = aSelectedRows[0].regionCode;
 
-            // Reload calculated CSD values from DB
-            await this._loadCalculatedResults(aSelectedRows);
+                // Collect all selected model codes
+                const aModelCodes = aSelectedRows.map(function (oRow) {
+                    return oRow.modelCode;
+                });
+
+                console.log("Calculating CSD:", {
+                    modelCodes: aModelCodes,
+                    regionCode: sRegionCode
+                });
+
+                const oAction =
+                    oModel.bindContext("/calculateCSD(...)");
+
+                oAction.setParameter("modelCode", aModelCodes);
+                oAction.setParameter("regionCode", sRegionCode);
+
+                await oAction.execute();
+
+                console.log("CSD calculation completed");
+
+                // Reload calculated CSD values from DB
+                await this._loadCalculatedResults(aSelectedRows);
+
+            } catch (oError) {
+
+                console.error("CSD Calculation Error:", oError);
+
+                sap.m.MessageBox.error(
+                    "CSD calculation failed. Please check the backend logs."
+                );
+            }
         },
         _loadCalculatedResults: async function (aSelectedRows) {
 
@@ -1311,6 +1360,8 @@ sap.ui.define([
                         ID: oDBResult.ID ?? "",
                         inputNSP:
                             oDBResult.inputNSP ?? "",
+                        status:
+                            oDBResult.status ?? "DRAFT",
 
                         exShowroomInput:
                             oDBResult.exShowroomInput ?? "",
@@ -1617,6 +1668,124 @@ sap.ui.define([
             this.getView().addDependent(oDialog);
             oDialog.open();
         },
+        onDelete: function () {
 
+            const oTable = this.byId("pricingTable");
+            const aSelectedIndices = oTable.getSelectedIndices();
+
+            if (!aSelectedIndices.length) {
+                sap.m.MessageToast.show("Please select at least one row to delete.");
+                return;
+            }
+
+            sap.m.MessageBox.confirm(
+                "Are you sure you want to delete the selected pricing result(s)?",
+                {
+                    title: "Confirm Delete",
+
+                    actions: [
+                        sap.m.MessageBox.Action.YES,
+                        sap.m.MessageBox.Action.NO
+                    ],
+
+                    emphasizedAction: sap.m.MessageBox.Action.YES,
+
+                    onClose: async function (sAction) {
+
+                        if (sAction !== sap.m.MessageBox.Action.YES) {
+                            return;
+                        }
+
+                        await this._deleteSelectedRows(aSelectedIndices);
+                    }.bind(this)
+                }
+            );
+        },
+        _deleteSelectedRows: async function (aSelectedIndices) {
+
+            const oTable = this.byId("pricingTable");
+
+            const oPricingModel =
+                this.getView().getModel("pricingModel");
+
+            const oODataModel =
+                this.getView().getModel();
+
+            const aResults =
+                oPricingModel.getProperty("/results");
+
+            try {
+
+                const aSelectedRows = aSelectedIndices
+                    .map(iIndex => aResults[iIndex])
+                    .filter(oRow => oRow && oRow.ID);
+
+                if (!aSelectedRows.length) {
+                    sap.m.MessageToast.show(
+                        "No valid rows selected."
+                    );
+                    return;
+                }
+
+                console.log(
+                    "Rows to delete:",
+                    aSelectedRows
+                );
+
+                // Delete from OData
+                for (const oRow of aSelectedRows) {
+
+                    console.log(
+                        "Deleting PricingResult:",
+                        oRow.ID
+                    );
+
+                    const oContext =
+                        oODataModel.bindContext(
+                            `/PricingResults(${oRow.ID})`
+                        );
+
+                    await oContext.requestObject();
+
+                    const oEntityContext =
+                        oContext.getBoundContext();
+
+                    await oEntityContext.delete("$auto");
+                }
+
+                // Remove deleted rows from JSONModel
+                const aDeletedIDs =
+                    aSelectedRows.map(oRow => oRow.ID);
+
+                const aRemainingResults =
+                    aResults.filter(
+                        oRow => !aDeletedIDs.includes(oRow.ID)
+                    );
+
+                oPricingModel.setProperty(
+                    "/results",
+                    aRemainingResults
+                );
+
+                oPricingModel.refresh(true);
+
+                oTable.clearSelection();
+
+                sap.m.MessageToast.show(
+                    `${aSelectedRows.length} pricing result(s) deleted successfully.`
+                );
+
+            } catch (oError) {
+
+                console.error(
+                    "Delete Error:",
+                    oError
+                );
+
+                sap.m.MessageBox.error(
+                    "Failed to delete the selected pricing result(s)."
+                );
+            }
+        },
     });
 });
