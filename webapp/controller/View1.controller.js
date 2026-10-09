@@ -1787,5 +1787,264 @@ sap.ui.define([
                 );
             }
         },
+        onApplyToOtherRegions: async function () {
+            const oTable = this.byId("pricingTable");
+            const oPricingModel = this.getView().getModel("pricingModel");
+
+            const aSelectedIndices = oTable.getSelectedIndices();
+
+            if (aSelectedIndices.length !== 1) {
+                MessageBox.warning(
+                    "Please select one calculated pricing row."
+                );
+                return;
+            }
+
+            const aResults = oPricingModel.getProperty("/results") || [];
+            const oSelectedRow = aResults[aSelectedIndices[0]];
+
+            if (!oSelectedRow || !oSelectedRow.ID) {
+                MessageBox.warning(
+                    "Please calculate the selected pricing row first."
+                );
+                return;
+            }
+
+            this._oSelectedApplyRow = oSelectedRow;
+
+            try {
+                // Load available regions
+                const aRegions = await this._readEntity(
+                    this.getView().getModel(),
+                    "/Regions"
+                );
+
+                // Exclude Tamil Nadu from the target regions
+                const aOtherRegions = aRegions.filter(function (oRegion) {
+                    return oRegion.regionCode !== "TN01";
+                });
+
+                // Create model for the fragment
+                const oRegionSelectionModel = new JSONModel({
+                    regions: aOtherRegions,
+                });
+
+                // Load fragment only once
+                if (!this._pApplyRegionsDialog) {
+                    this._pApplyRegionsDialog = this.loadFragment({
+                        name: "vpapricing.view.ApplyToOtherRegions"
+                    });
+                }
+
+                const oDialog = await this._pApplyRegionsDialog;
+
+                // Set the region selection model
+                oDialog.setModel(
+                    oRegionSelectionModel,
+                    "regionSelectionModel"
+                );
+
+                // Clear previous selections
+                this.byId("regionCombo").setSelectedKeys([]);
+
+                // Open dialog
+                oDialog.open();
+
+            } catch (oError) {
+                console.error("Failed to open Apply to Other Regions dialog:", oError);
+                MessageBox.error("Failed to load regions.");
+            }
+        },
+
+        onConfirmApplyToOtherRegions: async function () {
+            const oCombo = this.byId("regionCombo");
+            const aRegionCodes = oCombo.getSelectedKeys();
+
+            if (!aRegionCodes.length) {
+                MessageBox.warning("Please select at least one region.");
+                return;
+            }
+
+            const oSelectedRow = this._oSelectedApplyRow;
+            const oModel = this.getView().getModel();
+            const oDialog = await this._pApplyRegionsDialog;
+
+            const oSelectionLabel = this.byId("regionSelectionLabel");
+            const oBusySection = this.byId("calculationBusySection");
+            const oApplyButton = oDialog.getBeginButton();
+            const oCancelButton = oDialog.getEndButton();
+
+            const oPayload = {
+                modelCodes: [oSelectedRow.modelCode],
+                regionCodes: aRegionCodes,
+                orderType: oSelectedRow.orderType
+            };
+
+            console.log("calculateMultiRegion - Request Payload:", oPayload);
+
+            try {
+                // Show loading indicator
+                oBusySection.setVisible(true);
+
+                // Disable dropdown and both buttons
+                oSelectionLabel.setVisible(false);
+                oCombo.setEnabled(false);
+                oApplyButton.setEnabled(false);
+                oCancelButton.setEnabled(false);
+
+                const oAction = oModel.bindContext(
+                    "/calculateMultiRegion(...)"
+                );
+
+                oAction.setParameter("input", oPayload);
+
+                await new Promise(function (resolve) {
+                    setTimeout(resolve, 0);
+                });
+
+                await oAction.execute();
+
+                // Load the newly calculated rows for the target regions
+                await this._updateMultiRegionTable(
+                    oSelectedRow,
+                    aRegionCodes
+                );
+
+                MessageToast.show(
+                    "Pricing calculation completed for the selected regions."
+                );
+
+                oDialog.close();
+
+            } catch (oError) {
+                console.error("Apply to Other Regions failed:", oError);
+
+                MessageBox.error(
+                    oError.message ||
+                    "Failed to calculate pricing for the selected regions."
+                );
+
+            } finally {
+                // Restore controls if the dialog is still open
+                oBusySection.setVisible(false);
+                oCombo.setEnabled(true);
+                oSelectionLabel.setVisible(true);
+                oApplyButton.setEnabled(true);
+                oCancelButton.setEnabled(true);
+            }
+        },
+
+        onCancelApplyToOtherRegions: async function () {
+            const oDialog = await this._pApplyRegionsDialog;
+            oDialog.close();
+        },
+
+        _updateMultiRegionTable: async function (
+            oSelectedRow,
+            aRegionCodes
+        ) {
+            const oModel = this.getView().getModel();
+            const oPricingModel =
+                this.getView().getModel("pricingModel");
+
+            try {
+                // 1. Read the saved calculation results
+                const aPricingResults = await this._readEntity(
+                    oModel,
+                    "/PricingResults"
+                );
+
+                // Get the current table rows
+                const aCurrentRows =
+                    oPricingModel.getProperty("/results") || [];
+
+                // Rows that need to be refreshed
+                const aRowsToRefresh = [];
+
+                // 2. Process every selected target region
+                aRegionCodes.forEach((sRegionCode) => {
+
+                    const oDBResult = aPricingResults.find(
+                        (oResult) =>
+                            oResult.model_modelCode ===
+                            oSelectedRow.modelCode &&
+                            oResult.orderType ===
+                            oSelectedRow.orderType &&
+                            oResult.region_regionCode ===
+                            sRegionCode
+                    );
+
+                    // Skip regions without a saved calculation result
+                    if (!oDBResult) {
+                        console.warn(
+                            "No saved PricingResult found for:",
+                            oSelectedRow.modelCode,
+                            sRegionCode,
+                            oSelectedRow.orderType
+                        );
+                        return;
+                    }
+
+                    // 3. Check whether this region already exists in the table
+                    let oTableRow = aCurrentRows.find(
+                        (oRow) =>
+                            oRow.modelCode ===
+                            oSelectedRow.modelCode &&
+                            oRow.orderType ===
+                            oSelectedRow.orderType &&
+                            oRow.regionCode === sRegionCode
+                    );
+
+                    if (oTableRow) {
+                        // Existing row: refresh its saved pricing values
+                        aRowsToRefresh.push(oTableRow);
+                    } else {
+                        // New row: use the selected row as a template
+                        oTableRow = {
+                            ...oSelectedRow,
+                            regionCode: sRegionCode,
+                            ID: "",
+                            status: "DRAFT"
+                        };
+
+                        aCurrentRows.push(oTableRow);
+                        aRowsToRefresh.push(oTableRow);
+                    }
+                });
+
+                // 4. Reuse the existing function to populate pricing fields
+                if (aRowsToRefresh.length > 0) {
+                    await this._loadCalculatedResults(
+                        aRowsToRefresh
+                    );
+                }
+
+                // 5. Update the table model
+                oPricingModel.setProperty(
+                    "/results",
+                    aCurrentRows
+                );
+
+                oPricingModel.setProperty(
+                    "/resultsCount",
+                    aCurrentRows.length
+                );
+
+                oPricingModel.refresh(true);
+
+                console.log(
+                    "Multi-region table updated:",
+                    aRowsToRefresh
+                );
+
+            } catch (oError) {
+                console.error(
+                    "Failed to update multi-region table:",
+                    oError
+                );
+
+                throw oError;
+            }
+        },
     });
 });

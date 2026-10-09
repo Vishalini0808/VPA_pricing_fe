@@ -237,9 +237,9 @@
                             class="sapUiTinyMarginBegin"/>
 
                         <Button
-                            text="Apply to All Region"
+                            text="Apply to Other Regions"
                             icon="sap-icon://copy"
-                            press=".onApplyToAllRegion"
+                            press=".onApplyToOtherRegions"
                             class="sapUiTinyMarginBegin"/>
 
                         <Button

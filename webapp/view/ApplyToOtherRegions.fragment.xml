@@ -1,0 +1,84 @@
+<core:FragmentDefinition
+    xmlns:core="sap.ui.core"
+    xmlns="sap.m">
+
+    <Dialog
+        id="applyRegionsDialog"
+        title="Apply to Other Regions"
+        contentWidth="30rem"
+        resizable="true"
+        draggable="true">
+
+        <content>
+            <VBox
+                width="100%"
+                renderType="Bare"
+                class="sapUiResponsiveContentPadding"
+                fitContainer="false">
+
+                <Label
+                    id="regionSelectionLabel"
+                    text="Select target regions"
+                    labelFor="regionCombo"
+                    class="sapUiSmallMargin"/>
+
+                <MultiComboBox
+                    id="regionCombo"
+                    width="70%"
+                    placeholder="Select regions"
+                    class="sapUiSmallMargin"
+                    items="{regionSelectionModel>/regions}">
+
+                    <core:Item
+                        key="{regionSelectionModel>regionCode}"
+                        text="{regionSelectionModel>regionName}"/>
+
+                </MultiComboBox>
+
+                <!-- Animated loading section -->
+                <VBox
+                    id="calculationBusySection"
+                    width="100%"
+                    alignItems="Center"
+                    justifyContent="Center"
+                    visible="false"
+                    class="sapUiMediumMarginTop sapUiMediumMarginBottom">
+
+                    <Image
+                        id="bikeLoadingGif"
+                        src="images/royal_enfield_loading.gif"
+                        width="120px"
+                        densityAware="false"
+                        decorative="true"/>
+
+                    <Text
+                        text="Applying pricing to selected regions..."
+                        textAlign="Center"
+                        class="sapUiSmallMarginTop"/>
+                    
+                    <Label
+                        text="Please wait while we process your request." />
+
+                </VBox>
+
+            </VBox>
+        </content>
+
+        <beginButton>
+            <Button
+                id="applyRegionsButton"
+                text="Apply"
+                type="Emphasized"
+                press=".onConfirmApplyToOtherRegions"/>
+        </beginButton>
+
+        <endButton>
+            <Button
+                id="cancelRegionsButton"
+                text="Cancel"
+                press=".onCancelApplyToOtherRegions"/>
+        </endButton>
+
+    </Dialog>
+
+</core:FragmentDefinition>
