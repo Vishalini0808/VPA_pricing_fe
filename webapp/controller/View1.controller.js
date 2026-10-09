@@ -1904,6 +1904,12 @@ sap.ui.define([
 
                 await oAction.execute();
 
+                // Load the newly calculated rows for the target regions
+                await this._updateMultiRegionTable(
+                    oSelectedRow,
+                    aRegionCodes
+                );
+
                 MessageToast.show(
                     "Pricing calculation completed for the selected regions."
                 );
@@ -1920,11 +1926,11 @@ sap.ui.define([
 
             } finally {
                 // Restore controls if the dialog is still open
-                // oBusySection.setVisible(false);
-                // oCombo.setEnabled(true);
-                // oSelectionLabel.setVisible(true);
-                // oApplyButton.setEnabled(true);
-                // oCancelButton.setEnabled(true);
+                oBusySection.setVisible(false);
+                oCombo.setEnabled(true);
+                oSelectionLabel.setVisible(true);
+                oApplyButton.setEnabled(true);
+                oCancelButton.setEnabled(true);
             }
         },
 
@@ -1933,5 +1939,112 @@ sap.ui.define([
             oDialog.close();
         },
 
+        _updateMultiRegionTable: async function (
+            oSelectedRow,
+            aRegionCodes
+        ) {
+            const oModel = this.getView().getModel();
+            const oPricingModel =
+                this.getView().getModel("pricingModel");
+
+            try {
+                // 1. Read the saved calculation results
+                const aPricingResults = await this._readEntity(
+                    oModel,
+                    "/PricingResults"
+                );
+
+                // Get the current table rows
+                const aCurrentRows =
+                    oPricingModel.getProperty("/results") || [];
+
+                // Rows that need to be refreshed
+                const aRowsToRefresh = [];
+
+                // 2. Process every selected target region
+                aRegionCodes.forEach((sRegionCode) => {
+
+                    const oDBResult = aPricingResults.find(
+                        (oResult) =>
+                            oResult.model_modelCode ===
+                            oSelectedRow.modelCode &&
+                            oResult.orderType ===
+                            oSelectedRow.orderType &&
+                            oResult.region_regionCode ===
+                            sRegionCode
+                    );
+
+                    // Skip regions without a saved calculation result
+                    if (!oDBResult) {
+                        console.warn(
+                            "No saved PricingResult found for:",
+                            oSelectedRow.modelCode,
+                            sRegionCode,
+                            oSelectedRow.orderType
+                        );
+                        return;
+                    }
+
+                    // 3. Check whether this region already exists in the table
+                    let oTableRow = aCurrentRows.find(
+                        (oRow) =>
+                            oRow.modelCode ===
+                            oSelectedRow.modelCode &&
+                            oRow.orderType ===
+                            oSelectedRow.orderType &&
+                            oRow.regionCode === sRegionCode
+                    );
+
+                    if (oTableRow) {
+                        // Existing row: refresh its saved pricing values
+                        aRowsToRefresh.push(oTableRow);
+                    } else {
+                        // New row: use the selected row as a template
+                        oTableRow = {
+                            ...oSelectedRow,
+                            regionCode: sRegionCode,
+                            ID: "",
+                            status: "DRAFT"
+                        };
+
+                        aCurrentRows.push(oTableRow);
+                        aRowsToRefresh.push(oTableRow);
+                    }
+                });
+
+                // 4. Reuse the existing function to populate pricing fields
+                if (aRowsToRefresh.length > 0) {
+                    await this._loadCalculatedResults(
+                        aRowsToRefresh
+                    );
+                }
+
+                // 5. Update the table model
+                oPricingModel.setProperty(
+                    "/results",
+                    aCurrentRows
+                );
+
+                oPricingModel.setProperty(
+                    "/resultsCount",
+                    aCurrentRows.length
+                );
+
+                oPricingModel.refresh(true);
+
+                console.log(
+                    "Multi-region table updated:",
+                    aRowsToRefresh
+                );
+
+            } catch (oError) {
+                console.error(
+                    "Failed to update multi-region table:",
+                    oError
+                );
+
+                throw oError;
+            }
+        },
     });
 });
