@@ -829,7 +829,7 @@ sap.ui.define([
 
                         referenceMTSModel:
                             oExistingPricingResult
-                                ?.referenceMTSModel ?? "",
+                                ?.referenceMTSModel_modelCode  ?? "",
 
                         mtsExShowroom:
                             oExistingPricingResult
@@ -1419,7 +1419,7 @@ sap.ui.define([
                          */
 
                         referenceMTSModel:
-                            oDBResult.referenceMTSModel_modelCode ?? "",
+                            oDBResult.referenceMTSModel_mode?? "",
 
                         mtsExShowroom:
                             oDBResult.mtsExShowroom ?? "",

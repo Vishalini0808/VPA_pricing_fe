@@ -240,6 +240,7 @@
                             text="Apply to Other Regions"
                             icon="sap-icon://copy"
                             press=".onApplyToOtherRegions"
+                            enabled="{= ${viewModel>/orderType} !== 'GEM' }"
                             class="sapUiTinyMarginBegin"/>
 
                         <Button
