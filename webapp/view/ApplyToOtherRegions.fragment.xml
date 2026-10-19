@@ -46,7 +46,7 @@
 
                     <Image
                         id="bikeLoadingGif"
-                        src="images/royal_enfield_loading.gif"
+                        src="{imageModel>/bikeLoading}"
                         width="120px"
                         densityAware="false"
                         decorative="true"/>
