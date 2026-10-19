@@ -28,6 +28,15 @@ sap.ui.define([
             });
 
             this.getView().setModel(oPricingModel, "pricingModel");
+
+            // Loading image model
+            const oImageModel = new JSONModel({
+                bikeLoading: sap.ui.require.toUrl(
+                    "vpapricing/images/royal_enfield_loading.gif"
+                )
+            });
+
+            this.getView().setModel(oImageModel, "imageModel");
         },
         onClear() {
 
@@ -228,7 +237,8 @@ sap.ui.define([
                     aPricingComponents,
                     aRTOMasters,
                     aRTOExpenses,
-                    aPricingResults
+                    aPricingResults,
+                    aMTOConfigurations
                 ] = await Promise.all([
 
                     this._readEntity(
@@ -254,7 +264,10 @@ sap.ui.define([
                     this._readEntity(
                         oModel,
                         "/PricingResults"
-                    )
+                    ),
+
+                    this._readEntity(oModel, "/MTOConfigurations")
+
                 ]);
 
                 console.log("Models:", aModels);
@@ -521,6 +534,16 @@ sap.ui.define([
                                 );
                             }
                         );
+
+                    // -----------------------------------------------------
+                    // FIND MTO CONFIGURATIONS
+                    // -----------------------------------------------------
+
+                    const oMTOConfig = sOrderType === "MTO"
+                        ? aMTOConfigurations.find(oConfig =>
+                            oConfig.mtoModelCode === oModelData.modelCode
+                        )
+                        : null;
 
                     // -----------------------------------------------------
                     // FIND EXISTING PRICING RESULT
@@ -828,8 +851,9 @@ sap.ui.define([
                         // -------------------------------------------------
 
                         referenceMTSModel:
-                            oExistingPricingResult
-                                ?.referenceMTSModel_modelCode  ?? "",
+                            oMTOConfig?.referenceMTSModel_modelCode ??
+                            oExistingPricingResult?.referenceMTSModel_modelCode ??
+                            "",
 
                         mtsExShowroom:
                             oExistingPricingResult
@@ -1419,7 +1443,9 @@ sap.ui.define([
                          */
 
                         referenceMTSModel:
-                            oDBResult.referenceMTSModel_mode?? "",
+                            oDBResult.referenceMTSModel_modelCode ??
+                            oRow.referenceMTSModel ??
+                            "",
 
                         mtsExShowroom:
                             oDBResult.mtsExShowroom ?? "",
