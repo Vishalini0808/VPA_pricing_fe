@@ -31,7 +31,7 @@ server:
         ignoreCertErrors: false # If set to true, certificate errors will be ignored. E.g. self-signed certificates will be accepted
         backend:
           - path: /pricing
-            url: https://b1c17123trial-dev-vpa-srv.cfapps.us10-003.hana.ondemand.com
+            url: https://5a566441trial-dev-vpa-srv.cfapps.us10-001.hana.ondemand.com
     - name: sap-fe-mockserver
       beforeMiddleware: csp
       configuration:
