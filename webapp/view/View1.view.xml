@@ -62,7 +62,11 @@
 
                                     <core:Item
                                         key="{regionCode}"
-                                        text="{regionName}"/>
+                                        text="{parts: [
+                                            {path: 'regionCode'},
+                                            {path: 'regionName'}
+                                        ],
+                                        formatter: '.formatRegion'}"/>
 
                             </ComboBox>
                         </VBox>
@@ -113,11 +117,15 @@
                                 id="modelCodeMultiCombo"
                                 width="100%"
                                 selectedKeys="{viewModel>/models}"
+                                selectionChange=".onModelSelectionChange"
                                 items="{viewModel>/availableModels}">
 
                                 <core:Item
                                         key="{viewModel>modelCode}"
-                                        text="{viewModel>modelCode}"/>
+                                        text="{
+                                            path: 'viewModel>modelCode',
+                                            formatter: '.formatModelCode'
+                                        }"/>
 
                             </MultiComboBox>
                         </VBox>
@@ -221,6 +229,24 @@
 
                     <!-- Toolbar -->
                     <OverflowToolbar>
+                        <Label
+                            text="Display Fields"
+                            class="sapUiTinyMarginEnd"/>
+
+                        <MultiComboBox
+                            id="displayFieldsCombo"
+                            width="230px"
+                            placeholder="Select fields to display"
+                            selectedKeys="{viewModel>/selectedDisplayFields}"
+                            class="sapUiTinyMarginEnd">
+
+                            <core:Item key="BASIC" text="Basic Fields"/>
+                            <core:Item key="GST" text="GST Fields"/>
+                            <core:Item key="DEALER" text="Dealer Fields"/>
+                            <core:Item key="RTO" text="RTO Fields"/>
+                            <core:Item key="INSURANCE" text="Insurance Fields"/>
+
+                        </MultiComboBox>
 
                         <ToolbarSpacer/>
 
@@ -231,17 +257,23 @@
                             press=".onCalculate"/>
 
                         <Button
+                            text="Apply to Other Regions"
+                            icon="sap-icon://copy"
+                            press=".onApplyToOtherRegions"
+                            enabled="{= ${viewModel>/orderType} !== 'GEM' }"
+                            class="sapUiTinyMarginBegin"/>
+
+                        <Button
                             text="Submit"
                             icon="sap-icon://paper-plane"
                             press=".onSubmit"
                             class="sapUiTinyMarginBegin"/>
 
                         <Button
-                            text="Apply to Other Regions"
-                            icon="sap-icon://copy"
-                            press=".onApplyToOtherRegions"
-                            enabled="{= ${viewModel>/orderType} !== 'GEM' }"
-                            class="sapUiTinyMarginBegin"/>
+                            text="Export to Excel"
+                            type="Success"
+                            icon="sap-icon://excel-attachment"
+                            press=".onExportExcel"/>
 
                         <Button
                             text="Delete"
@@ -282,7 +314,9 @@
                         </table:Column>
 
                         <!-- Region -->
-                        <table:Column width="100px">
+                        <table:Column 
+                            width="100px"
+                             visible="{= ${viewModel>/orderType} !== 'GEM' }">
                             <Label text="Region"/>
                             <table:template>
                                 <Text text="{pricingModel>regionCode}"/>
@@ -345,7 +379,14 @@
                         <!-- Helmet -->
                         <table:Column
                             width="110px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'BASIC'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="Helmet (₹)"/>
 
@@ -361,7 +402,14 @@
                         <!-- Transportation -->
                         <table:Column
                             width="130px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'BASIC'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="Transportation (₹)"/>
 
@@ -377,7 +425,14 @@
                         <!-- Other Expenses -->
                         <table:Column
                             width="140px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'BASIC'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="Other Expenses (₹)"/>
 
@@ -393,7 +448,14 @@
                         <!-- GST % -->
                         <table:Column
                             width="100px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'GST'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="GST %"/>
 
@@ -409,7 +471,14 @@
                         <!-- Dealer Margin % -->
                         <table:Column
                             width="140px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'DEALER'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="Dealer Margin %"/>
 
@@ -425,7 +494,14 @@
                         <!-- Helmet Margin -->
                         <table:Column
                             width="120px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'BASIC'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="Helmet Margin (₹)"/>
 
@@ -577,7 +653,14 @@
                         <!-- RTO % -->
                         <table:Column
                             width="100px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'RTO'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="RTO %"/>
 
@@ -629,7 +712,14 @@
                         <!-- Insurance Rate -->
                         <table:Column
                             width="130px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'INSURANCE'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="Insurance Rate"/>
 
@@ -661,7 +751,14 @@
                         <!-- TPA / PA -->
                         <table:Column
                             width="120px"
-                            visible="{= ${viewModel>/orderType} === 'MTS' || ${viewModel>/orderType} === 'EV' }">
+                            visible="{
+                                parts: [
+                                    {path: 'viewModel>/orderType'},
+                                    {path: 'viewModel>/selectedDisplayFields'},
+                                    {value: 'INSURANCE'}
+                                ],
+                                formatter: '.formatMasterFieldVisibility'
+                            }">
 
                             <Label text="TPA / PA (₹)"/>
 
