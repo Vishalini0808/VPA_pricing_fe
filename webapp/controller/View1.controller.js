@@ -2,8 +2,9 @@ sap.ui.define([
     "sap/ui/core/mvc/Controller",
     "sap/ui/model/json/JSONModel",
     "sap/m/MessageBox",
-    "sap/m/MessageToast"
-], (Controller, JSONModel, MessageBox, MessageToast) => {
+    "sap/m/MessageToast",
+    "sap/ui/export/Spreadsheet"
+], (Controller, JSONModel, MessageBox, MessageToast, Spreadsheet) => {
     "use strict";
 
     return Controller.extend("vpapricing.controller.View1", {
@@ -16,7 +17,8 @@ sap.ui.define([
                 availableModels: [],
                 status: "ACTIVE",
                 effectiveDate: "",
-                submitterEmail: ""
+                submitterEmail: "",
+                selectedDisplayFields: []
             });
 
             this.getView().setModel(oViewModel, "viewModel");
@@ -38,6 +40,32 @@ sap.ui.define([
 
             this.getView().setModel(oImageModel, "imageModel");
         },
+
+        formatRegion: function (sCode, sName) {
+            if (sCode === "__ALL__") {
+                return "Select All";
+            }
+            return sCode + " - " + sName;
+        },
+
+        formatModelCode: function (sModelCode) {
+            return sModelCode === "__ALL__"
+                ? "Select All"
+                : sModelCode;
+        },
+
+        formatMasterFieldVisibility: function (
+            sOrderType,
+            aSelectedGroups,
+            sGroup
+        ) {
+            return (
+                (sOrderType === "MTS" || sOrderType === "EV") &&
+                Array.isArray(aSelectedGroups) &&
+                aSelectedGroups.includes(sGroup)
+            );
+        },
+
         onClear() {
 
             const oViewModel =
@@ -54,7 +82,8 @@ sap.ui.define([
                 availableModels: [],
                 status: "ACTIVE",
                 effectiveDate: "",
-                submitterEmail: ""
+                submitterEmail: "",
+                selectedDisplayFields: []
             });
 
             // Clear pricing table
@@ -70,6 +99,7 @@ sap.ui.define([
                 oTable.clearSelection();
             }
         },
+
         async onOrderTypeChange(oEvent) {
 
             const sOrderType = oEvent.getSource().getSelectedKey();
@@ -78,6 +108,7 @@ sap.ui.define([
 
             // Clear previously selected models
             oViewModel.setProperty("/models", []);
+
             oViewModel.setProperty("/availableModels", []);
 
             try {
@@ -125,9 +156,22 @@ sap.ui.define([
                     });
                 }
 
+                const aModelsWithSelectAll = [
+                    {
+                        modelCode: "__ALL__",
+                        displayText: "Select All"
+                    },
+                    ...aFilteredModels.map(function (oModelData) {
+                        return {
+                            ...oModelData,
+                            displayText: oModelData.modelCode
+                        };
+                    })
+                ];
+
                 oViewModel.setProperty(
                     "/availableModels",
-                    aFilteredModels
+                    aModelsWithSelectAll
                 );
 
                 console.log(
@@ -149,6 +193,63 @@ sap.ui.define([
                 );
             }
         },
+
+        onModelSelectionChange: function (oEvent) {
+            const oItem = oEvent.getParameter("changedItem");
+
+            if (!oItem || oItem.getKey() !== "__ALL__") {
+                return;
+            }
+
+            const bSelected = oEvent.getParameter("selected");
+            const oViewModel = this.getView().getModel("viewModel");
+            const oCombo = this.byId("modelCodeMultiCombo");
+
+            const aModels = oViewModel.getProperty("/availableModels") || [];
+
+            const aModelCodes = aModels
+                .filter(oModel => oModel.modelCode !== "__ALL__")
+                .map(oModel => oModel.modelCode);
+
+            // Remove the special Select All key from the selection
+            oCombo.setSelectedKeys(
+                bSelected ? aModelCodes : []
+            );
+
+            // Store only actual model codes
+            oViewModel.setProperty(
+                "/models",
+                bSelected ? aModelCodes : []
+            );
+        },
+
+        onRegionSelectionChange: function (oEvent) {
+
+            const oItem = oEvent.getParameter("changedItem");
+
+            if (!oItem || oItem.getKey() !== "__ALL__") {
+                return;
+            }
+
+            const bSelected = oEvent.getParameter("selected");
+
+            const oCombo = oEvent.getSource();
+
+            const oRegionModel = oCombo.getModel("regionSelectionModel");
+
+            const aRegions = oRegionModel.getProperty("/regions") || [];
+
+            // Collect actual region codes only
+            const aRegionCodes = aRegions
+                .filter(oRegion => oRegion.regionCode !== "__ALL__")
+                .map(oRegion => oRegion.regionCode);
+
+            // Select or deselect all regions
+            oCombo.setSelectedKeys(
+                bSelected ? aRegionCodes : []
+            );
+        },
+
         _readEntity: function (
             oModel,
             sPath
@@ -188,6 +289,7 @@ sap.ui.define([
                 }
             );
         },
+
         onGetData: async function () {
 
             const oViewModel = this.getView().getModel("viewModel");
@@ -227,6 +329,10 @@ sap.ui.define([
             }
 
             try {
+                // Show Busy Indicator
+                const oView = this.getView();
+                oView.setBusyIndicatorDelay(0);
+                oView.setBusy(true);
 
                 // ---------------------------------------------------------
                 // 2. Read all required entities
@@ -1021,9 +1127,38 @@ sap.ui.define([
                     oError.message ||
                     "Failed to load pricing data."
                 );
+            } finally {
+                // Always hide Busy Indicator
+                const oView = this.getView();
+
+                oView.setBusy(false);
             }
             this.byId("pricingPanel").setExpanded(true);
         },
+
+        _showCalculationLoading: function () {
+
+            if (!this._oCalculationBusyDialog) {
+
+                this._oCalculationBusyDialog = new sap.m.BusyDialog({
+                    title: "Calculating Pricing",
+                    text: "Please wait while we process the selected models.",
+                    showCancelButton: false
+                });
+
+                this.getView().addDependent(this._oCalculationBusyDialog);
+            }
+
+            this._oCalculationBusyDialog.open();
+        },
+
+        _hideCalculationLoading: function () {
+
+            if (this._oCalculationBusyDialog) {
+                this._oCalculationBusyDialog.close();
+            }
+        },
+
         onCalculate: async function () {
 
             const oTable = this.byId("pricingTable");
@@ -1061,6 +1196,7 @@ sap.ui.define([
             console.log("Selected Rows:", aSelectedRows);
 
             try {
+                this._showCalculationLoading();
 
                 switch (sOrderType) {
 
@@ -1131,8 +1267,11 @@ sap.ui.define([
                     oError.message ||
                     "Calculation failed."
                 );
+            } finally {
+                this._hideCalculationLoading();
             }
         },
+
         _calculateMTS: async function (aSelectedRows) {
 
             const oModel = this.getView().getModel();
@@ -1182,6 +1321,7 @@ sap.ui.define([
 
             await this._loadCalculatedResults(aSelectedRows);
         },
+
         _calculateMTO: async function (aSelectedRows) {
 
             const oModel = this.getView().getModel();
@@ -1210,6 +1350,7 @@ sap.ui.define([
 
             await this._loadCalculatedResults(aSelectedRows);
         },
+
         _calculateEV: async function (aSelectedRows) {
 
             const oModel = this.getView().getModel();
@@ -1236,6 +1377,7 @@ sap.ui.define([
 
             await this._loadCalculatedResults(aSelectedRows);
         },
+
         _calculateGeM: async function (aSelectedRows) {
 
             const oModel = this.getView().getModel();
@@ -1258,6 +1400,7 @@ sap.ui.define([
             // Reload calculated GeM values from DB
             await this._loadCalculatedResults(aSelectedRows);
         },
+
         _calculateCSD: async function (aSelectedRows) {
 
             const oModel = this.getView().getModel();
@@ -1299,6 +1442,7 @@ sap.ui.define([
                 );
             }
         },
+
         _loadCalculatedResults: async function (aSelectedRows) {
 
             const oModel = this.getView().getModel();
@@ -1560,6 +1704,7 @@ sap.ui.define([
                 throw oError;
             }
         },
+
         onSubmit: async function () {
 
             const oTable = this.byId("pricingTable");
@@ -1600,15 +1745,34 @@ sap.ui.define([
                 title: "Submit Pricing",
                 contentWidth: "450px",
                 content: [
-                    new sap.m.Label({
-                        text: "Comments",
-                        labelFor: "submitComments"
-                    }),
-                    new sap.m.TextArea("submitComments", {
+                    new sap.ui.layout.form.SimpleForm({
+                        editable: true,
+                        layout: "ResponsiveGridLayout",
                         width: "100%",
-                        rows: 5,
-                        maxLength: 1000,
-                        placeholder: "Enter comments..."
+                        labelSpanXL: 12,
+                        labelSpanL: 12,
+                        labelSpanM: 12,
+                        labelSpanS: 12,
+                        adjustLabelSpan: false,
+                        emptySpanXL: 0,
+                        emptySpanL: 0,
+                        emptySpanM: 0,
+                        columnsXL: 1,
+                        columnsL: 1,
+                        columnsM: 1,
+                        content: [
+                            new sap.m.Label({
+                                text: "Comments",
+                                labelFor: "submitComments"
+                            }),
+
+                            new sap.m.TextArea("submitComments", {
+                                width: "100%",
+                                rows: 5,
+                                maxLength: 1000,
+                                placeholder: "Enter comments..."
+                            })
+                        ]
                     })
                 ],
                 beginButton: new sap.m.Button({
@@ -1694,6 +1858,7 @@ sap.ui.define([
             this.getView().addDependent(oDialog);
             oDialog.open();
         },
+
         onDelete: function () {
 
             const oTable = this.byId("pricingTable");
@@ -1727,6 +1892,7 @@ sap.ui.define([
                 }
             );
         },
+
         _deleteSelectedRows: async function (aSelectedIndices) {
 
             const oTable = this.byId("pricingTable");
@@ -1813,6 +1979,7 @@ sap.ui.define([
                 );
             }
         },
+
         onApplyToOtherRegions: async function () {
             const oTable = this.byId("pricingTable");
             const oPricingModel = this.getView().getModel("pricingModel");
@@ -1852,7 +2019,13 @@ sap.ui.define([
 
                 // Create model for the fragment
                 const oRegionSelectionModel = new JSONModel({
-                    regions: aOtherRegions,
+                    regions: [
+                        {
+                            regionCode: "__ALL__",
+                            regionName: "Select All"
+                        },
+                        ...aOtherRegions
+                    ]
                 });
 
                 // Load fragment only once
@@ -1884,7 +2057,8 @@ sap.ui.define([
 
         onConfirmApplyToOtherRegions: async function () {
             const oCombo = this.byId("regionCombo");
-            const aRegionCodes = oCombo.getSelectedKeys();
+            const aRegionCodes = oCombo.getSelectedKeys()
+                .filter(sCode => sCode !== "__ALL__");
 
             if (!aRegionCodes.length) {
                 MessageBox.warning("Please select at least one region.");
@@ -2070,6 +2244,96 @@ sap.ui.define([
                 );
 
                 throw oError;
+            }
+        },
+
+        onExportExcel: async function () {
+
+            const oTable = this.byId("pricingTable");
+
+            const oPricingModel = this.getView().getModel("pricingModel");
+
+            const aResults = oPricingModel.getProperty("/results") || [];
+
+            if (!aResults.length) {
+                MessageBox.warning("No pricing data available to export.");
+                return;
+            }
+
+            // 1. Get only currently visible table columns
+            const aVisibleColumns = oTable.getColumns().filter(function (oColumn) {
+                return oColumn.getVisible();
+            });
+
+            // 2. Build Excel columns dynamically
+            const aColumns = aVisibleColumns
+                .map(function (oColumn) {
+
+                    const oTemplate = oColumn.getTemplate();
+
+                    if (!oTemplate || !oTemplate.getBindingInfo) {
+                        return null;
+                    }
+
+                    // Supports Text, Input, ObjectStatus, etc.
+                    const oBindingInfo =
+                        oTemplate.getBindingInfo("text") ||
+                        oTemplate.getBindingInfo("value") ||
+                        oTemplate.getBindingInfo("number") ||
+                        oTemplate.getBindingInfo("state");
+
+                    if (!oBindingInfo || !oBindingInfo.parts?.length) {
+                        return null;
+                    }
+
+                    const sProperty = oBindingInfo.parts[0].path;
+
+                    // Get column header
+                    const oLabel = oColumn.getLabel();
+
+                    const sLabel = oLabel?.getText
+                        ? oLabel.getText()
+                        : sProperty;
+
+                    return {
+                        label: sLabel,
+                        property: sProperty,
+                        type: "String"
+                    };
+
+                })
+                .filter(Boolean);
+
+            if (!aColumns.length) {
+                MessageBox.warning("No exportable columns found.");
+                return;
+            }
+
+            // 3. Create Spreadsheet
+            const oSpreadsheet = new Spreadsheet({
+                workbook: {
+                    columns: aColumns
+                },
+                dataSource: aResults,
+                fileName: "Vehicle_Pricing_Report.xlsx"
+            });
+
+            try {
+
+                await oSpreadsheet.build();
+
+                MessageToast.show("Excel downloaded successfully.");
+
+            } catch (oError) {
+
+                console.error("Excel Export Error:", oError);
+
+                MessageBox.error("Failed to export pricing data.");
+
+            } finally {
+
+                oSpreadsheet.destroy();
+
             }
         },
     });

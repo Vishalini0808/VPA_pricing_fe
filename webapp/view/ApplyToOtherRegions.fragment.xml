@@ -27,11 +27,18 @@
                     width="70%"
                     placeholder="Select regions"
                     class="sapUiSmallMargin"
+                    selectionChange=".onRegionSelectionChange"
                     items="{regionSelectionModel>/regions}">
 
                     <core:Item
                         key="{regionSelectionModel>regionCode}"
-                        text="{regionSelectionModel>regionName}"/>
+                        text="{
+                            parts: [
+                                {path: 'regionSelectionModel>regionCode'},
+                                {path: 'regionSelectionModel>regionName'}
+                            ],
+                            formatter: '.formatRegion'
+                        }"/>
 
                 </MultiComboBox>
 
