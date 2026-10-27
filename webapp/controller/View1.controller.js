@@ -1322,6 +1322,7 @@ sap.ui.define([
             await this._loadCalculatedResults(aSelectedRows);
         },
 
+
         _calculateMTO: async function (aSelectedRows) {
 
             const oModel = this.getView().getModel();
@@ -1333,8 +1334,7 @@ sap.ui.define([
                     regionCode: oRow.regionCode,
                     engineType: oRow.engineType,
                     orderType: oRow.orderType,
-                    validFrom: oRow.validFrom,
-                    parts: oRow.parts || []
+                    validFrom: oRow.validFrom
                 };
 
             });
@@ -1351,32 +1351,6 @@ sap.ui.define([
             await this._loadCalculatedResults(aSelectedRows);
         },
 
-        _calculateEV: async function (aSelectedRows) {
-
-            const oModel = this.getView().getModel();
-
-            for (const oRow of aSelectedRows) {
-
-                if (!oRow.inputNSP) {
-                    throw new Error(
-                        `Please enter NSP for ${oRow.modelCode}.`
-                    );
-                }
-
-                const oAction =
-                    oModel.bindContext("/calculateEV(...)");
-
-                oAction.setParameter("item", {
-                    modelCode: oRow.modelCode,
-                    regionCode: oRow.regionCode,
-                    nsp: Number(oRow.inputNSP)
-                });
-
-                await oAction.execute();
-            }
-
-            await this._loadCalculatedResults(aSelectedRows);
-        },
 
         _calculateGeM: async function (aSelectedRows) {
 
